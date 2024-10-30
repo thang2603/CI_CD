@@ -1,33 +1,47 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI DEMO
+name: Node.js CI and Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [20.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [ 20.x ]  # Add more versions if needed
 
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Checkout code from repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js with caching for dependencies
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
+          cache: 'npm'
 
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Build the React app (if build script is present)
+      - name: Build React app
+        run: npm run build --if-present
+
+      # Step 5: Run tests (optional, ensure tests pass before deploying)
+      - name: Run tests
+        run: npm test
+
+      # Step 6: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-  
+        if: success()  # Deploy only if previous steps succeed
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build  # Folder containing the built React app
